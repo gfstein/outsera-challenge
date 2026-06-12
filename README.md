@@ -80,6 +80,15 @@ docker build -t challenge-api .
 docker run -p 8080:8080 challenge-api
 ```
 
+## Documentação interativa (Swagger UI)
+
+Disponível após iniciar a aplicação:
+
+| Recurso | URL |
+|---------|-----|
+| Swagger UI | `http://localhost:8080/api/swagger-ui.html` |
+| OpenAPI JSON | `http://localhost:8080/api/v3/api-docs` |
+
 ## Endpoints
 
 ### Intervalo entre prêmios consecutivos
@@ -129,5 +138,6 @@ Apenas **testes de integração**, garantindo conformidade com os dados da propo
 
 | Teste | O que valida |
 |-------|--------------|
-| `MovieCsvImportIntegrationTest` | 206 filmes do CSV importados corretamente (título, ano, winner, studios, producers) |
+| `MovieCsvImportIntegrationTest` | 206 filmes importados, 42 vencedores, parsing correto de múltiplos produtores |
 | `ProducerIntervalIntegrationTest` | Endpoint `/api/v1/producers/interval` com Joel Silver (intervalo 1) e Matthew Vaughn (intervalo 13) |
+| `ProducerIntervalControlledDataIntegrationTest` | Empate em min e max, produtor com única vitória excluído, filme não-vencedor ignorado |

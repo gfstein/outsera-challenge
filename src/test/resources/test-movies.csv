@@ -1,0 +1,11 @@
+year;title;studios;producers;winner
+2000;Movie Alpha;Studio A;Producer Alpha;yes
+2001;Movie Beta;Studio A;Producer Alpha;yes
+2005;Movie Gamma;Studio B;Producer Beta;yes
+2010;Movie Delta;Studio B;Producer Beta;yes
+2003;Movie Epsilon;Studio C;Producer Gamma;yes
+2004;Movie Zeta;Studio C;Producer Gamma;yes
+2004;Movie Eta;Studio D;Producer Delta;yes
+2009;Movie Theta;Studio D;Producer Delta;yes
+1999;Movie Iota;Studio E;Producer Single;yes
+1998;Movie Kappa;Studio F;Producer Loser;no

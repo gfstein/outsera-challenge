@@ -17,30 +17,15 @@ public class CsvNameListParser {
             return List.of();
         }
 
-        return split(raw).stream()
+        return Arrays.stream(normalize(raw).split(DELIMITER_REGEX))
                 .map(CsvNameListParser::cleanupToken)
                 .filter(name -> !name.isEmpty())
                 .map(factory)
                 .toList();
     }
 
-    private static List<String> split(String raw) {
-        if (containsListSeparator(raw)) {
-            return Arrays.asList(normalizeListSeparators(raw).split(DELIMITER_REGEX));
-        }
-
-        return List.of(raw);
-    }
-
-    private static boolean containsListSeparator(String raw) {
-        return raw.contains(", and ")
-                || raw.contains(", ")
-                || raw.contains(";")
-                || raw.contains(" & ")
-                || raw.contains(" and ");
-    }
-
-    private static String normalizeListSeparators(String raw) {
+    private static String normalize(String raw) {
+        // A ordem importa: ", and " deve vir antes de " and ", e " and " antes de ", "
         return raw
                 .replace(", and ", DELIMITER)
                 .replace(" and ", DELIMITER)
