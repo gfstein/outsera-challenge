@@ -26,11 +26,7 @@ public class Producer {
     }
 
     public static List<Producer> fromCsvCell(String raw) {
-        List<String> names = CsvNameListParser.parse(raw, name -> name);
-
-        return applyMissingSurnames(names).stream()
-                .map(Producer::create)
-                .toList();
+        return applyMissingSurnamesAndCreate(CsvNameListParser.parse(raw, name -> name));
     }
 
     /**
@@ -39,8 +35,8 @@ public class Producer {
      * já traz o sobrenome compartilhado daquele grupo. Copiamos o sobrenome do
      * proximo nome da lista, que mantem a mesma ordem do texto original.
      */
-    private static List<String> applyMissingSurnames(List<String> names) {
-        List<String> normalized = new ArrayList<>(names.size());
+    private static List<Producer> applyMissingSurnamesAndCreate(List<String> names) {
+        List<Producer> result = new ArrayList<>(names.size());
 
         for (int i = 0; i < names.size(); i++) {
             String name = names.get(i);
@@ -54,9 +50,9 @@ public class Producer {
                 }
             }
 
-            normalized.add(name);
+            result.add(Producer.create(name));
         }
 
-        return normalized;
+        return result;
     }
 }

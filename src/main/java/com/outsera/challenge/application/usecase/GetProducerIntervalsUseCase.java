@@ -12,6 +12,7 @@ public class GetProducerIntervalsUseCase {
     private final ProducerIntervalCalculator calculator;
 
     public ProducerIntervalResult execute() {
+        // Candidato a cache (ex.: @Cacheable): dados imutáveis após startup, resultado sempre igual.
         return calculator.calculate(movieRepositoryPort.findWinners());
     }
 }

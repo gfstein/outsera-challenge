@@ -4,80 +4,63 @@ import com.outsera.challenge.domain.model.movie.Movie;
 import com.outsera.challenge.domain.model.producer.ProducerIntervalResult;
 import com.outsera.challenge.domain.model.producer.ProducerIntervalResult.ProducerAwardInterval;
 
+import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.IntSummaryStatistics;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 public class ProducerIntervalCalculator {
 
     public ProducerIntervalResult calculate(List<Movie> movies) {
-        // CSV fixo (~200 filmes): agrega em memória; volume não justifica agregação no banco.
-        List<ProducerAwardInterval> intervals = movies.stream()
-                .flatMap(this::toProducerWins)
-                .collect(groupingWinYearsByProducer())
-                .entrySet().stream()
-                .flatMap(entry -> toConsecutiveIntervals(entry.getKey(), entry.getValue()))
-                .toList();
+        // Passo 1: agrupa anos de vitória por produtor (precisa ver todos os filmes antes de calcular intervalos)
+        Map<String, SortedSet<Integer>> winsByProducer = groupWinYearsByProducer(movies);
 
-        return buildResult(intervals);
+        // Passo 2: calcula intervalos consecutivos e já encontra min/max em um único loop
+        return buildResult(winsByProducer);
     }
 
-    private Stream<ProducerWin> toProducerWins(Movie movie) {
-        return movie.producers().stream()
-                .map(producer -> new ProducerWin(producer.name(), movie.year()));
+    private Map<String, SortedSet<Integer>> groupWinYearsByProducer(List<Movie> movies) {
+        Map<String, SortedSet<Integer>> map = new HashMap<>();
+        for (Movie movie : movies) {
+            for (var producer : movie.producers()) {
+                map.computeIfAbsent(producer.name(), _ -> new TreeSet<>()).add(movie.year());
+            }
+        }
+        return map;
     }
 
-    private Collector<ProducerWin, ?, Map<String, SortedSet<Integer>>> groupingWinYearsByProducer() {
-        return Collectors.groupingBy(
-                ProducerWin::producer,
-                Collectors.mapping(
-                        ProducerWin::year,
-                        Collectors.toCollection(TreeSet::new)
-                )
-        );
-    }
+    private ProducerIntervalResult buildResult(Map<String, SortedSet<Integer>> winsByProducer) {
+        int min = Integer.MAX_VALUE;
+        int max = Integer.MIN_VALUE;
+        List<ProducerAwardInterval> minList = new ArrayList<>();
+        List<ProducerAwardInterval> maxList = new ArrayList<>();
 
-    private Stream<ProducerAwardInterval> toConsecutiveIntervals(String producer, SortedSet<Integer> winYears) {
-        List<Integer> years = List.copyOf(winYears);
+        for (var entry : winsByProducer.entrySet()) {
+            String producer = entry.getKey();
+            Integer prev = null;
+            for (int year : entry.getValue()) {
+                if (prev != null) {
+                    int interval = year - prev;
+                    ProducerAwardInterval item = new ProducerAwardInterval(producer, interval, prev, year);
+                    if (interval < min) { min = interval; minList = new ArrayList<>(); minList.add(item); }
+                    else if (interval == min) { minList.add(item); }
+                    if (interval > max) { max = interval; maxList = new ArrayList<>(); maxList.add(item); }
+                    else if (interval == max) { maxList.add(item); }
+                }
+                prev = year;
+            }
+        }
 
-        return IntStream.range(1, years.size())
-                .mapToObj(index -> new ProducerAwardInterval(
-                        producer,
-                        years.get(index) - years.get(index - 1),
-                        years.get(index - 1),
-                        years.get(index)
-                ));
-    }
-
-    private ProducerIntervalResult buildResult(List<ProducerAwardInterval> intervals) {
-        if (intervals.isEmpty()) {
+        if (minList.isEmpty()) {
             return ProducerIntervalResult.empty();
         }
 
-        IntSummaryStatistics stats = intervals.stream()
-                .mapToInt(ProducerAwardInterval::interval)
-                .summaryStatistics();
+        minList.sort(Comparator.comparing(ProducerAwardInterval::producer));
+        maxList.sort(Comparator.comparing(ProducerAwardInterval::producer));
 
-        return new ProducerIntervalResult(
-                filterByInterval(intervals, stats.getMin()),
-                filterByInterval(intervals, stats.getMax())
-        );
-    }
-
-    private List<ProducerAwardInterval> filterByInterval(List<ProducerAwardInterval> intervals, int interval) {
-        return intervals.stream()
-                .filter(awardInterval -> awardInterval.interval() == interval)
-                .sorted(Comparator.comparing(ProducerAwardInterval::producer))
-                .toList();
-    }
-
-    private record ProducerWin(String producer, int year) {
+        return new ProducerIntervalResult(minList, maxList);
     }
 }
